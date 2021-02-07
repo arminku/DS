@@ -6,6 +6,7 @@ from scipy.fft import rfft
 from scipy.fft import rfftfreq
 from scipy import signal
 
+#Klasse für Soundfile --> stellt Daten und PLots zur Verfügung
 class Soundfile:
     def __init__(self, Soundfile:str, Title, Color):
         #Read in Soundfile

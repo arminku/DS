@@ -14,6 +14,7 @@ class Soundfile:
         self.NumberSamples = len(self.Data)
         self.Title= Title
         self.Color=Color
+
         # Reduce Stereo Signal to a Mono Signal (Average of both Channels)
         self.Data_Mono = np.sum(self.Data,axis=1)/2 
         self.Data_Mono_Norm = self.Data_Mono/ abs(max(self.Data_Mono))
@@ -59,9 +60,21 @@ class Soundfile:
         plt.grid(b=True, which='major', color='black', alpha=0.5, linestyle='dashdot', lw=0.5)
         plt.xlim(StartValue, EndValue)
 
-    def subplot_Spectrogram(self, pltIdx, StartValue, EndValue, Data):       
+    def subplot_Spectrogram(self, pltIdx, StartValue, EndValue, Data, nfft,window):       
         plt.subplot(2, 1, pltIdx)
-        self.sg_spectrum , self.sg_frequencies, self.sg_times,self.sg_im= plt.specgram((self.Data_Mono_Norm-Data), NFFT=4096, Fs=self.SampleRate, noverlap=1024,scale='dB', cmap='plasma')
+        
+        if window == 'none':
+            win= plt.mlab.window_none
+        elif window =='hamming':
+            win= np.hamming(nfft)
+        elif window == 'blackman':
+            win= np.blackman(nfft)
+        elif window == 'kaiser':
+            win= np.kaiser(nfft)
+        else :
+            win=np.hanning(nfft)
+
+        self.sg_spectrum , self.sg_frequencies, self.sg_times,self.sg_im= plt.specgram((self.Data_Mono_Norm-Data), NFFT=nfft, Fs=self.SampleRate, noverlap=1024,scale='dB', cmap='plasma', window=win)
         plt.ylim(StartValue,EndValue) 
         plt.title("Spektrogramm im Frequenzbereich {}-{}Hz".format(StartValue,EndValue),fontweight='bold',size='medium')
         plt.xlabel('Zeit [s]',size='small')
@@ -127,21 +140,21 @@ def plotDataFFT_diff(Soundfiles,StartValue, EndValue):
     fig.subplots_adjust(top=0.9)
     plt.show()
 
-def plot_Spectrogram(Soundfiles,StartValue, EndValue):   
+def plot_Spectrogram(Soundfiles,StartValue, EndValue, nfft=4096,window='hamming'):   
     fig, axs = plt.subplots(2, figsize=( 10,6), facecolor='#dddddd')
-    Soundfiles[0].subplot_Spectrogram(1,StartValue,EndValue,Soundfiles[2].Data_Mono_Norm)   
+    Soundfiles[0].subplot_Spectrogram(1,StartValue,EndValue,Soundfiles[2].Data_Mono_Norm,nfft,window)   
     plt.colorbar().set_label('Intensität [dB/Hz]', size='medium')
-    Soundfiles[1].subplot_Spectrogram(2,StartValue,EndValue,Soundfiles[2].Data_Mono_Norm)   
+    Soundfiles[1].subplot_Spectrogram(2,StartValue,EndValue,Soundfiles[2].Data_Mono_Norm,nfft,window)   
     plt.colorbar().set_label('Intensität [dB/Hz]', size='medium') 
     fig.tight_layout()
     fig.subplots_adjust(top=0.9)
     plt.show()
 
-def plot_amplitude_maxfreq(SoundfileEngine2:Soundfile,SoundfileNominal:Soundfile):
+def plot_amplitude_maxfreq(SoundfileEngine2:Soundfile,SoundfileNominal:Soundfile,nfft=4096,window= 'hamming'):
     # get coordinates of highest amplitude in spectrum  
     fig, axs = plt.subplots(2, figsize=( 10,6), facecolor='#dddddd')
     maxAmplitude=np.unravel_index(SoundfileEngine2.sg_spectrum.argmax(), SoundfileEngine2.sg_spectrum.shape) 
-    SoundfileEngine2.subplot_Spectrogram(1,0,1500,SoundfileNominal.Data_Mono_Norm) 
+    SoundfileEngine2.subplot_Spectrogram(1,0,1500,SoundfileNominal.Data_Mono_Norm,nfft,window) 
     plt.subplot(2, 1, 2, facecolor='#fff4d6')
     plt.plot(SoundfileEngine2.sg_times, 10*np.log10(SoundfileEngine2.sg_spectrum[maxAmplitude[0],:]), c='r')
     plt.xlim(0,20)
